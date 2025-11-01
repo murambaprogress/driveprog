@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <link rel="shortcut icon" href="favicon.png"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta name="theme-color" content="#1A73E8"/>
+  <link rel="apple-touch-icon" sizes="76x76" href="apple-icon.png"/>
+  <link rel="manifest" href="manifest.json"/>
+  <title>DriveCash Dashboard</title>
+  <base href="/drivecash-dashboard/">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==" crossorigin=""/>
+  <link href="https://fonts.googleapis.com/css?family=Material+Icons|Material+Icons+Outlined|Material+Icons+Two+Tone|Material+Icons+Round|Material+Icons+Sharp" rel="stylesheet"/>
+
+  <!-- No hiding CSS: show all UI elements in embedded dashboard -->
+
+  <script>
+  // Comprehensive path fixing for React chunks
+  (function() {
+    // Set webpack public path
+    window.__webpack_public_path__ = '/drivecash-dashboard/';
+    
+    // Intercept script creation for dynamic imports
+    var originalCreateElement = document.createElement;
+    document.createElement = function(tagName) {
+      var element = originalCreateElement.call(document, tagName);
+      if (tagName.toLowerCase() === 'script') {
+        var originalSrcDescriptor = Object.getOwnPropertyDescriptor(HTMLScriptElement.prototype, 'src') || 
+                                   Object.getOwnPropertyDescriptor(Element.prototype, 'src');
+        if (originalSrcDescriptor && originalSrcDescriptor.set) {
+          Object.defineProperty(element, 'src', {
+            set: function(value) {
+              // Fix chunk loading paths for React dynamic imports
+              if (typeof value === 'string' && value.startsWith('/static/js/')) {
+                console.log('Fixing chunk path:', value, 'to', '/drivecash-dashboard' + value);
+                value = '/drivecash-dashboard' + value;
+              }
+              originalSrcDescriptor.set.call(this, value);
+            },
+            get: function() {
+              return originalSrcDescriptor.get.call(this);
+            },
+            configurable: true,
+            enumerable: true
+          });
+        }
+      }
+      return element;
+    };
+    
+    // Also intercept appendChild to catch script insertions
+    var originalAppendChild = document.head.appendChild || document.body.appendChild;
+    ['head', 'body'].forEach(function(parent) {
+      if (document[parent] && document[parent].appendChild) {
+        var originalAppendChild = document[parent].appendChild;
+        document[parent].appendChild = function(child) {
+          if (child && child.tagName && child.tagName.toLowerCase() === 'script' && child.src) {
+            if (child.src.startsWith('/static/js/')) {
+              console.log('Intercepting appendChild for chunk:', child.src);
+              child.src = child.src.replace('/static/js/', '/drivecash-dashboard/static/js/');
+            }
+          }
+          return originalAppendChild.call(this, child);
+        };
+      }
+    });
+    
+    // Intercept fetch for good measure
+    var originalFetch = window.fetch;
+    window.fetch = function(url, options) {
+      if (typeof url === 'string' && url.startsWith('/static/js/')) {
+        console.log('Fixing fetch path:', url);
+        url = '/drivecash-dashboard' + url;
+      }
+      return originalFetch.call(this, url, options);
+    };
+  })();
+  </script>
+
+  <script>
+  // Intercept and disable WebSocket connections to prevent localhost:4000 errors
+  (function() {
+    var originalWebSocket = window.WebSocket;
+    var originalIO = window.io;
+    
+    // Override WebSocket constructor to prevent connections to localhost:4000
+    window.WebSocket = function(url, protocols) {
+      if (typeof url === 'string' && (url.includes('localhost:4000') || url.includes(':4000'))) {
+        console.log('Blocked WebSocket connection to:', url);
+        // Return a mock WebSocket that doesn't actually connect
+        return {
+          close: function() {},
+          send: function() {},
+          addEventListener: function() {},
+          removeEventListener: function() {},
+          readyState: 3, // CLOSED
+          CONNECTING: 0,
+          OPEN: 1,
+          CLOSING: 2,
+          CLOSED: 3
+        };
+      }
+      return new originalWebSocket(url, protocols);
+    };
+
+    // Override Socket.IO if present
+    if (typeof window.io !== 'undefined') {
+      window.io = function(url, options) {
+        if (typeof url === 'string' && (url.includes('localhost:4000') || url.includes(':4000'))) {
+          console.log('Blocked Socket.IO connection to:', url);
+          // Return a mock socket that doesn't actually connect
+          return {
+            on: function() {},
+            off: function() {},
+            emit: function() {},
+            connect: function() {},
+            disconnect: function() {},
+            connected: false,
+            disconnected: true
+          };
+        }
+        return originalIO ? originalIO(url, options) : null;
+      };
+    }
+
+    // Also intercept fetch requests to localhost:4000 if needed
+    var originalFetch = window.fetch;
+    window.fetch = function(url, options) {
+      if (typeof url === 'string' && (url.includes('localhost:4000') || url.includes(':4000'))) {
+        console.log('Blocked fetch request to:', url);
+        return Promise.resolve(new Response('{}', { status: 200, statusText: 'OK' }));
+      }
+      return originalFetch(url, options);
+    };
+  })();
+
+  // Add logout functionality to communicate with parent window
+  document.addEventListener('DOMContentLoaded', function() {
+    // Function to handle logout
+    function handleLogout() {
+      // Notify parent window of logout
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage('logout', '*');
+      } else {
+        // Fallback: redirect to home page
+        window.location.href = '/';
+      }
+    }
+
+    // Set up logout event listeners using robust text/attribute checks
+    setTimeout(function() {
+      // Find candidate elements (buttons and links) and filter by text/attributes
+      var candidates = Array.from(document.querySelectorAll('button, a'));
+      var isLogoutElement = function(el) {
+        try {
+          var txt = (el.textContent || '').trim().toLowerCase();
+          var aria = (el.getAttribute && (el.getAttribute('aria-label') || '')).toLowerCase();
+          var title = (el.getAttribute && (el.getAttribute('title') || '')).toLowerCase();
+          var href = (el.getAttribute && (el.getAttribute('href') || '')).toLowerCase();
+          if (aria.includes('logout') || title.includes('logout') || href.includes('logout') || href.includes('signout')) return true;
+          if (/\b(logout|log out|sign out|signout)\b/.test(txt)) return true;
+          return false;
+        } catch (e) { return false; }
+      };
+
+      var logoutButtons = candidates.filter(isLogoutElement);
+
+      logoutButtons.forEach(function(button) {
+        try {
+          button.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            handleLogout();
+          });
+        } catch (e) { /* ignore */ }
+      });
+
+      // Also observe DOM for dynamically added logout controls
+      var observer = new MutationObserver(function(mutations) {
+        var added = [];
+        for (var i = 0; i < mutations.length; i++) {
+          var m = mutations[i];
+          for (var j = 0; j < (m.addedNodes || []).length; j++) {
+            var node = m.addedNodes[j];
+            if (!(node instanceof Element)) continue;
+            if (isLogoutElement(node)) added.push(node);
+            // also check descendants
+            var descendants = node.querySelectorAll ? Array.from(node.querySelectorAll('button, a')) : [];
+            added = added.concat(descendants.filter(isLogoutElement));
+          }
+        }
+        added.forEach(function(button) {
+          if (!button.getAttribute || button.getAttribute('data-logout-handled') === 'true') return;
+          try {
+            button.setAttribute('data-logout-handled', 'true');
+            button.addEventListener('click', function(e) {
+              e.preventDefault();
+              e.stopPropagation();
+              handleLogout();
+            });
+          } catch (e) { /* ignore */ }
+        });
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+    }, 1000); // Wait 1 second for dashboard to load
+  });
+  </script>
+
+  <script>
+  // Defensive cleanup: remove any USER / ADMIN portal buttons injected by the dashboard
+  (function() {
+    function removeRoleButtons(root) {
+      try {
+        var els = Array.from((root || document).querySelectorAll('button, a'));
+        els.forEach(function(el) {
+          var txt = (el.textContent || '').trim().toLowerCase();
+          var title = (el.getAttribute && (el.getAttribute('title') || '')).toLowerCase();
+          if (txt === 'user' || txt === 'admin' || title === 'user' || title === 'admin') {
+            // hide and remove click handlers
+            try { el.style.display = 'none'; el.disabled = true; el.setAttribute('data-role-removed','true'); } catch(e){}
+          }
+        });
+      } catch (e) { /* ignore */ }
+    }
+
+    // Run once after load and then observe for dynamic changes
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(function() { removeRoleButtons(document); }, 1200);
+
+      var observer = new MutationObserver(function(muts) {
+        muts.forEach(function(m) {
+          (m.addedNodes || []).forEach(function(n) {
+            if (!(n instanceof Element)) return;
+            removeRoleButtons(n);
+          });
+        });
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    });
+  })();
+  </script>
+
+  <script defer="defer" data-site="YOUR_DOMAIN_HERE" src="https://api.nepcha.com/js/nepcha-analytics.js"></script>
+  <script defer="defer" src="static/js/main.8b1b51f2.js"></script>
+</head>
+<body>
+  <noscript>You need to enable JavaScript to run this app.</noscript>
+  <div id="app"></div>
+</body>
+</html>

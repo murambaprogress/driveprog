@@ -1,0 +1,152 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root{
+  --brand: #0b3b36;
+}
+
+body {
+  @apply bg-white text-gray-800;
+}
+
+.stepper { @apply flex items-center gap-4 mb-6; }
+.step { @apply px-4 py-2 rounded-md border; }
+.step-active { @apply bg-green-800 text-white; }
+.step-complete { @apply bg-green-200 text-green-800; }
+
+/* Ensure table headers and cells align vertically center across the app */
+table th, table td {
+  vertical-align: middle !important;
+}
+
+/* MUI table cell normalization: vertically center contents, normalize padding and ensure icons/avatars align */
+.MuiTableCell-root,
+.MuiTableCell-head,
+.MuiTableCell-body,
+table th,
+table td {
+  vertical-align: middle !important;
+  /* keep horizontal padding intact but normalize vertical padding for consistency */
+  padding-top: 12px !important;
+  padding-bottom: 12px !important;
+  min-height: 56px;
+}
+
+/* Enhanced vertical alignment for table cell contents */
+.MuiTableCell-root {
+  display: table-cell !important;
+  vertical-align: middle !important;
+}
+
+.MuiTableCell-root > * {
+  display: inline-flex !important;
+  align-items: center !important;
+  vertical-align: middle !important;
+  min-height: 40px;
+}
+
+/* Special handling for complex cell content */
+.MuiTableCell-root .MuiBox-root {
+  display: flex !important;
+  align-items: center !important;
+  width: auto;
+  min-height: 40px;
+}
+
+/* Ensure header cells look visually distinct and aligned */
+.MuiTableHead-root .MuiTableCell-root,
+table thead th {
+  font-weight: 600;
+  vertical-align: middle !important;
+  height: 56px;
+  min-height: 56px;
+}
+
+/* Small guard: table cell line-height should allow multi-line content to remain vertically centered */
+.MuiTableCell-root,
+table td,
+table th {
+  line-height: 1.25;
+}
+
+/* EnhancedTable specific alignment - ensure all content is vertically centered */
+.MuiTable-root .MuiTableCell-root {
+  vertical-align: middle !important;
+}
+
+/* Ensure chips and other inline components in tables are properly aligned */
+.MuiTableCell-root .MuiChip-root {
+  vertical-align: middle;
+  margin: 2px 0;
+}
+
+.MuiTableCell-root .MuiIconButton-root {
+  vertical-align: middle;
+  margin: 0;
+  padding: 8px;
+}
+
+.MuiTableCell-root .MuiAvatar-root {
+  vertical-align: middle;
+  margin: 2px 0;
+}
+
+/* Specific alignment for user info in table cells */
+.MuiTableCell-root .user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+}
+
+.MuiTableCell-root .user-info .MuiAvatar-root {
+  flex-shrink: 0;
+}
+
+.MuiTableCell-root .user-info .user-details {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 40px;
+}
+
+/* Enhanced status chip alignment */
+.MuiTableCell-root .status-chip {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+}
+
+/* Form controls: ensure labels and inputs are vertically aligned within rows */
+.MuiFormControl-root,
+.MuiFormControl-fullWidth {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Input labels and the input base should align center vertically when placed side-by-side */
+.MuiFormControl-root .MuiInputLabel-root,
+.MuiFormControl-root .MuiInputBase-root,
+.MuiFormControl-root .MuiSelect-root {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* FormControlLabel (checkbox/radio with label) should align centrally */
+.MuiFormControlLabel-root {
+  align-items: center;
+}
+
+/* Reduce label font-size slightly where used inline to avoid wrap misalignment */
+.MuiFormControl-root .MuiInputLabel-root {
+  font-size: 0.95rem;
+}
+
+/* For stacked label/input layouts (vertical), keep existing behavior */
+.MuiFormControl-root.MuiFormControl-marginNormal {
+  flex-direction: column;
+  align-items: stretch;
+}

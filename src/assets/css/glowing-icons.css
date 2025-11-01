@@ -1,0 +1,97 @@
+/* Glowing Icons CSS */
+
+/* Base glow effect for icons */
+.glow-icon {
+  transition: all 0.3s ease;
+  filter: drop-shadow(0 0 2px rgba(25, 118, 210, 0.3));
+}
+
+.glow-icon:hover {
+  filter: drop-shadow(0 0 8px rgba(25, 118, 210, 0.8));
+  transform: scale(1.05);
+}
+
+/* Success glow */
+.glow-success {
+  filter: drop-shadow(0 0 4px rgba(46, 125, 50, 0.6));
+}
+
+.glow-success:hover {
+  filter: drop-shadow(0 0 12px rgba(46, 125, 50, 0.9));
+}
+
+/* Warning glow */
+.glow-warning {
+  filter: drop-shadow(0 0 4px rgba(237, 108, 2, 0.6));
+}
+
+.glow-warning:hover {
+  filter: drop-shadow(0 0 12px rgba(237, 108, 2, 0.9));
+}
+
+/* Error glow */
+.glow-error {
+  filter: drop-shadow(0 0 4px rgba(211, 47, 47, 0.6));
+}
+
+.glow-error:hover {
+  filter: drop-shadow(0 0 12px rgba(211, 47, 47, 0.9));
+}
+
+/* Info glow */
+.glow-info {
+  filter: drop-shadow(0 0 4px rgba(2, 136, 209, 0.6));
+}
+
+.glow-info:hover {
+  filter: drop-shadow(0 0 12px rgba(2, 136, 209, 0.9));
+}
+
+/* Primary glow */
+.glow-primary {
+  filter: drop-shadow(0 0 4px rgba(25, 118, 210, 0.6));
+}
+
+.glow-primary:hover {
+  filter: drop-shadow(0 0 12px rgba(25, 118, 210, 0.9));
+}
+
+/* Secondary glow */
+.glow-secondary {
+  filter: drop-shadow(0 0 4px rgba(156, 39, 176, 0.6));
+}
+
+.glow-secondary:hover {
+  filter: drop-shadow(0 0 12px rgba(156, 39, 176, 0.9));
+}
+
+/* Animated pulse glow */
+.glow-pulse {
+  animation: pulse-glow 2s infinite;
+}
+
+@keyframes pulse-glow {
+  0% {
+    filter: drop-shadow(0 0 4px rgba(25, 118, 210, 0.4));
+  }
+  50% {
+    filter: drop-shadow(0 0 12px rgba(25, 118, 210, 0.8));
+  }
+  100% {
+    filter: drop-shadow(0 0 4px rgba(25, 118, 210, 0.4));
+  }
+}
+
+/* Subtle glow for card headers */
+.header-glow {
+  filter: drop-shadow(0 0 3px rgba(25, 118, 210, 0.2));
+}
+
+/* Button icon glow */
+.btn-icon-glow {
+  transition: filter 0.2s ease;
+}
+
+.btn-icon-glow:hover {
+  filter: drop-shadow(0 0 6px rgba(25, 118, 210, 0.7));
+}

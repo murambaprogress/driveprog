@@ -1,0 +1,469 @@
+import React, { useState, useRef } from "react";
+import Grid from "@mui/material/Grid";
+import Card from "@mui/material/Card";
+import Icon from "@mui/material/Icon";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogTitle from "@mui/material/DialogTitle";
+import Avatar from "@mui/material/Avatar";
+import Chip from "@mui/material/Chip";
+import IconButton from "@mui/material/IconButton";
+import Tooltip from "@mui/material/Tooltip";
+// import TextField from "@mui/material/TextField"; // Replaced with VhoozhtInput
+// import FormControl from "@mui/material/FormControl"; // Replaced with VhoozhtSelect
+// import InputLabel from "@mui/material/InputLabel"; // Replaced with VhoozhtSelect labels
+// import Select from "@mui/material/Select"; // Replaced with VhoozhtSelect
+// import MenuItem from "@mui/material/MenuItem"; // Replaced with VhoozhtSelect options
+import Alert from "@mui/material/Alert";
+import Snackbar from "@mui/material/Snackbar";
+import LinearProgress from "@mui/material/LinearProgress";
+import Tabs from "@mui/material/Tabs";
+import Tab from "@mui/material/Tab";
+import Box from "@mui/material/Box";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
+import Paper from "@mui/material/Paper";
+import { alpha } from "@mui/material/styles";
+
+// Material Dashboard 2 React components
+import MDBox from "components/MDBox";
+import MDTypography from "components/MDTypography";
+import MDButton from "components/MDButton";
+// DriveCash unified form components
+import { VhoozhtInput, VhoozhtSelect, VhoozhtTextarea } from "components/VhoozhtForms";
+import { formatters } from "utils/dataFormatters";
+import MDBadge from "components/MDBadge";
+
+// Material Dashboard 2 React examples
+import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
+import DashboardNavbar from "examples/Navbars/DashboardNavbar";
+import Footer from "examples/Footer";
+
+// Document Status Colors
+const getStatusColor = (status) => {
+  switch (status) {
+    case 'pending': return '#ff9800';
+    case 'approved': return '#4caf50';
+    case 'rejected': return '#f44336';
+    case 'under_review': return '#2196f3';
+    default: return '#9e9e9e';
+  }
+};
+
+const getDocumentIcon = (type) => {
+  switch (type.toLowerCase()) {
+    case 'pdf': return 'picture_as_pdf';
+    case 'image': 
+    case 'jpg':
+    case 'jpeg':
+    case 'png': return 'image';
+    case 'doc':
+    case 'docx': return 'description';
+    default: return 'attachment';
+  }
+};
+
+const formatDate = (dateString) => {
+  return new Date(dateString).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+};
+
+// Mock document data
+const mockDocuments = [
+  {
+    id: 1,
+    name: "Driver's License",
+    type: "pdf",
+    size: "2.4 MB",
+    status: "approved",
+    uploadDate: "2024-01-15T10:30:00Z",
+    verificationDate: "2024-01-16T14:22:00Z",
+    category: "Identity Documents",
+    adminNotes: "Document verified successfully."
+  },
+  {
+    id: 2,
+    name: "Bank Statement - January",
+    type: "pdf", 
+    size: "1.8 MB",
+    status: "pending",
+    uploadDate: "2024-01-20T09:15:00Z",
+    category: "Bank Statements"
+  },
+  {
+    id: 3,
+    name: "Pay Stub",
+    type: "image",
+    size: "0.9 MB", 
+    status: "under_review",
+    uploadDate: "2024-01-18T16:45:00Z",
+    category: "Income Verification",
+    adminNotes: "Requires additional verification."
+  }
+];
+
+function Documents() {
+  const [documents, setDocuments] = useState(mockDocuments);
+  const [tabValue, setTabValue] = useState(0);
+  const [uploadDialog, setUploadDialog] = useState(false);
+  const [uploadData, setUploadData] = useState({
+    name: '',
+    category: '',
+    description: '',
+    file: null
+  });
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
+  const fileInputRef = useRef(null);
+
+  const documentCategories = [
+    'Identity Documents',
+    'Income Verification', 
+    'Bank Statements',
+    'Property Documents',
+    'Insurance Papers',
+    'Tax Returns',
+    'Employment Letters',
+    'Other'
+  ];
+
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Validate file type
+      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+      if (!allowedTypes.includes(file.type)) {
+        setNotification({
+          open: true,
+          message: 'Please select a valid file type (PDF, DOC, DOCX, JPG, PNG)',
+          severity: 'error'
+        });
+        return;
+      }
+      
+      // Validate file size (10MB max)
+      if (file.size > 10 * 1024 * 1024) {
+        setNotification({
+          open: true,
+          message: 'File size must be less than 10MB',
+          severity: 'error'
+        });
+        return;
+      }
+      
+      setUploadData(prev => ({ ...prev, file }));
+    }
+  };
+
+  const handleUpload = () => {
+    if (!uploadData.name || !uploadData.category || !uploadData.file) {
+      setNotification({
+        open: true,
+        message: 'Please fill in all required fields and select a file',
+        severity: 'error'
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadProgress(0);
+    
+    // Simulate upload progress
+    const interval = setInterval(() => {
+      setUploadProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          setIsUploading(false);
+          
+          // Add new document to list
+          const newDoc = {
+            id: documents.length + 1,
+            name: uploadData.name,
+            type: uploadData.file.type.includes('pdf') ? 'pdf' : 'image',
+            size: `${(uploadData.file.size / 1024 / 1024).toFixed(1)} MB`,
+            status: 'pending',
+            uploadDate: new Date().toISOString(),
+            category: uploadData.category,
+            description: uploadData.description
+          };
+          
+          setDocuments([newDoc, ...documents]);
+          setUploadDialog(false);
+          setUploadData({ name: '', category: '', description: '', file: null });
+          
+          setNotification({
+            open: true,
+            message: 'Document uploaded successfully!',
+            severity: 'success'
+          });
+          
+          return 0;
+        }
+        return prev + 10;
+      });
+    }, 200);
+  };
+
+  const filteredDocuments = documents.filter(doc => {
+    if (tabValue === 0) return true;
+    if (tabValue === 1) return doc.status === 'pending';
+    if (tabValue === 2) return doc.status === 'approved';
+    if (tabValue === 3) return doc.status === 'rejected';
+    return true;
+  });
+
+  return (
+    <DashboardLayout>
+      <DashboardNavbar />
+      <MDBox py={3}>
+        <MDBox>
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <Card>
+                <MDBox p={3}>
+                  <MDBox display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+                    <MDBox>
+                      <MDTypography variant="h6" fontWeight="medium" color="text">
+                        Document Management
+                      </MDTypography>
+                      <MDTypography variant="button" fontWeight="regular" color="text" opacity={0.7}>
+                        Upload and manage your loan documents
+                      </MDTypography>
+                    </MDBox>
+                    <MDButton
+                      variant="gradient"
+                      color="info"
+                      onClick={() => setUploadDialog(true)}
+                      startIcon={<Icon>upload_file</Icon>}
+                    >
+                      Upload Document
+                    </MDButton>
+                  </MDBox>
+
+                  {/* Document Status Tabs */}
+                  <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)} sx={{ mb: 3 }}>
+                    <Tab label={`All (${documents.length})`} />
+                    <Tab label={`Pending (${documents.filter(d => d.status === 'pending').length})`} />
+                    <Tab label={`Approved (${documents.filter(d => d.status === 'approved').length})`} />
+                    <Tab label={`Rejected (${documents.filter(d => d.status === 'rejected').length})`} />
+                  </Tabs>
+
+                  {/* Documents Grid */}
+                  <Grid container spacing={3}>
+                    {filteredDocuments.map((document) => (
+                      <Grid item xs={12} sm={6} md={4} key={document.id}>
+                        <DocumentCard document={document} />
+                      </Grid>
+                    ))}
+                  </Grid>
+
+                  {filteredDocuments.length === 0 && (
+                    <MDBox textAlign="center" py={6}>
+                      <Icon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }}>folder_open</Icon>
+                      <MDTypography variant="h6" color="text" opacity={0.6}>
+                        No documents found
+                      </MDTypography>
+                    </MDBox>
+                  )}
+                </MDBox>
+              </Card>
+            </Grid>
+          </Grid>
+        </MDBox>
+      </MDBox>
+
+      {/* Upload Dialog */}
+      <Dialog open={uploadDialog} onClose={() => setUploadDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Upload New Document</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={3} sx={{ mt: 1 }}>
+            <Grid item xs={12}>
+              <VhoozhtInput
+                fullWidth
+                label="Document Name *"
+                value={uploadData.name}
+                onChange={(e) => setUploadData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="e.g., Driver's License, Bank Statement"
+              />
+            </Grid>
+            
+            <Grid item xs={12}>
+              <VhoozhtSelect
+                fullWidth
+                label="Category *"
+                value={uploadData.category}
+                onChange={(e) => setUploadData(prev => ({ ...prev, category: e.target.value }))}
+                options={documentCategories.map(category => ({ 
+                  value: category, 
+                  label: category 
+                }))}
+              />
+            </Grid>
+            
+            <Grid item xs={12}>
+              <VhoozhtTextarea
+                fullWidth
+                label="Description (Optional)"
+                rows={3}
+                value={uploadData.description}
+                onChange={(e) => setUploadData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Add any additional notes or description..."
+              />
+            </Grid>
+
+            <Grid item xs={12}>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                style={{ display: 'none' }}
+                onChange={handleFileSelect}
+              />
+              <MDButton
+                variant="outlined"
+                color="info"
+                fullWidth
+                onClick={() => fileInputRef.current?.click()}
+                startIcon={<Icon>attach_file</Icon>}
+                sx={{ 
+                  height: 56,
+                  border: uploadData.file ? '2px solid #4caf50' : '2px dashed #ccc',
+                  backgroundColor: uploadData.file ? alpha('#4caf50', 0.1) : 'transparent'
+                }}
+              >
+                {uploadData.file ? uploadData.file.name : 'Click to Select File'}
+              </MDButton>
+              <MDTypography variant="caption" color="text" opacity={0.7} display="block" mt={1}>
+                Supported formats: PDF, DOC, DOCX, JPG, PNG (Max 10MB)
+              </MDTypography>
+            </Grid>
+
+            {isUploading && (
+              <Grid item xs={12}>
+                <MDTypography variant="body2" color="text" mb={1}>
+                  Uploading... {uploadProgress}%
+                </MDTypography>
+                <LinearProgress variant="determinate" value={uploadProgress} />
+              </Grid>
+            )}
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <MDButton color="secondary" onClick={() => setUploadDialog(false)} disabled={isUploading}>
+            Cancel
+          </MDButton>
+          <MDButton color="info" onClick={handleUpload} disabled={isUploading}>
+            {isUploading ? 'Uploading...' : 'Upload Document'}
+          </MDButton>
+        </DialogActions>
+      </Dialog>
+
+      {/* Notifications */}
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={4000}
+        onClose={() => setNotification({ ...notification, open: false })}
+      >
+        <Alert severity={notification.severity} onClose={() => setNotification({ ...notification, open: false })}>
+          {notification.message}
+        </Alert>
+      </Snackbar>
+
+      <Footer />
+    </DashboardLayout>
+  );
+}
+
+// Document Card Component
+function DocumentCard({ document }) {
+  return (
+    <Card 
+      sx={{ 
+        height: '100%',
+        transition: 'all 0.3s ease',
+        '&:hover': {
+          transform: 'translateY(-4px)',
+          boxShadow: 3
+        }
+      }}
+    >
+      <MDBox p={2}>
+        <MDBox display="flex" alignItems="center" mb={2}>
+          <Avatar
+            sx={{
+              bgcolor: getStatusColor(document.status),
+              width: 48,
+              height: 48,
+              mr: 2,
+            }}
+          >
+            <Icon fontSize="medium" sx={{ color: 'white' }}>{getDocumentIcon(document.type)}</Icon>
+          </Avatar>
+          <MDBox>
+            <MDTypography variant="h6" fontWeight="bold" color="text">
+              {document.name}
+            </MDTypography>
+            <MDTypography variant="caption" color="text" opacity={0.7}>
+              {document.type.toUpperCase()} • {document.size}
+            </MDTypography>
+          </MDBox>
+        </MDBox>
+        
+        <Chip 
+          label={document.status.toUpperCase()} 
+          sx={{
+            bgcolor: getStatusColor(document.status),
+            color: 'white',
+            fontWeight: 'bold',
+            fontSize: '0.75rem',
+            mb: 2
+          }}
+          size="small"
+        />
+
+        <MDBox>
+          <MDTypography variant="caption" color="text" opacity={0.7} display="block">
+            Uploaded: {formatDate(document.uploadDate)}
+          </MDTypography>
+          {document.verificationDate && (
+            <MDTypography variant="caption" color="text" opacity={0.7} display="block">
+              Verified: {formatDate(document.verificationDate)}
+            </MDTypography>
+          )}
+          {document.category && (
+            <MDTypography variant="caption" color="text" opacity={0.7} display="block">
+              Category: {document.category}
+            </MDTypography>
+          )}
+        </MDBox>
+
+        {document.adminNotes && (
+          <Alert severity={document.status === 'approved' ? 'success' : document.status === 'rejected' ? 'error' : 'info'} sx={{ mt: 2, fontSize: '0.875rem' }}>
+            <strong>Admin Notes:</strong> {document.adminNotes}
+          </Alert>
+        )}
+
+        <MDBox display="flex" justifyContent="space-between" mt={2}>
+          <MDButton size="small" color="info" variant="text">
+            <Icon fontSize="small" sx={{ mr: 1 }}>visibility</Icon>
+            View
+          </MDButton>
+          <MDButton size="small" color="info" variant="text">
+            <Icon fontSize="small" sx={{ mr: 1 }}>download</Icon>
+            Download
+          </MDButton>
+        </MDBox>
+      </MDBox>
+    </Card>
+  );
+}
+
+export default Documents;

@@ -1,0 +1,137 @@
+import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import Card from "@mui/material/Card";
+import Grid from "@mui/material/Grid";
+import Icon from "@mui/material/Icon";
+import Tabs from "@mui/material/Tabs";
+import Tab from "@mui/material/Tab";
+import Box from "@mui/material/Box";
+import Chip from "@mui/material/Chip";
+import Avatar from "@mui/material/Avatar";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
+import Divider from "@mui/material/Divider";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
+import Alert from "@mui/material/Alert";
+import Snackbar from "@mui/material/Snackbar";
+import { alpha } from "@mui/material/styles";
+
+import MDBox from "components/MDBox";
+import MDTypography from "components/MDTypography";
+import MDButton from "components/MDButton";
+// DriveCash unified form components
+import { VhoozhtInput, VhoozhtSelect, VhoozhtTextarea } from "components/VhoozhtForms";
+import { formatters } from "utils/dataFormatters";
+import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
+import DashboardNavbar from "examples/Navbars/DashboardNavbar";
+
+// Component implementation with VhoozhtForms
+function PaymentsIndex() {
+  const location = useLocation();
+  const [formData, setFormData] = useState({
+    loanId: '',
+    paymentType: '',
+    amount: '',
+    paymentMethod: ''
+  });
+
+  const availableLoans = []; // Add your loan data here
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  };
+
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  return (
+    <DashboardLayout>
+      <DashboardNavbar />
+      <MDBox py={3}>
+        <MDBox mb={3}>
+          <Card>
+            <MDBox pt={3} px={3}>
+              <MDTypography variant="h6" fontWeight="medium">
+                Make a Payment
+              </MDTypography>
+            </MDBox>
+            <MDBox p={3}>
+              <Grid container spacing={3}>
+                <Grid item xs={12}>
+                  <VhoozhtSelect
+                    fullWidth
+                    label="Select Loan"
+                    value={formData.loanId}
+                    onChange={(e) => handleInputChange('loanId', e.target.value)}
+                    options={availableLoans.map(loan => ({
+                      value: loan.id,
+                      label: `${loan.id} - ${loan.type}`
+                    }))}
+                  />
+                </Grid>
+                
+                <Grid item xs={12} sm={6}>
+                  <VhoozhtSelect
+                    fullWidth
+                    label="Payment Type"
+                    value={formData.paymentType}
+                    onChange={(e) => handleInputChange('paymentType', e.target.value)}
+                    options={[
+                      { value: 'monthly', label: 'Monthly Payment' },
+                      { value: 'partial', label: 'Partial Payment' },
+                      { value: 'full', label: 'Full Payment' }
+                    ]}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <VhoozhtInput
+                    fullWidth
+                    label="Payment Amount"
+                    type="number"
+                    value={formData.amount}
+                    onChange={(e) => handleInputChange('amount', e.target.value)}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <VhoozhtSelect
+                    fullWidth
+                    label="Payment Method"
+                    value={formData.paymentMethod}
+                    onChange={(e) => handleInputChange('paymentMethod', e.target.value)}
+                    options={[
+                      { value: 'bank_transfer', label: 'Bank Transfer' },
+                      { value: 'credit_card', label: 'Credit Card' },
+                      { value: 'debit_card', label: 'Debit Card' },
+                      { value: 'ach', label: 'ACH Transfer' }
+                    ]}
+                  />
+                </Grid>
+              </Grid>
+
+              <MDBox mt={4} display="flex" justifyContent="end">
+                <MDButton variant="contained" color="info">
+                  Process Payment
+                </MDButton>
+              </MDBox>
+            </MDBox>
+          </Card>
+        </MDBox>
+      </MDBox>
+    </DashboardLayout>
+  );
+}
+
+export default PaymentsIndex;

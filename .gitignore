@@ -1,1 +1,37 @@
+# Environments
+.env
+.env.*
+!/.env.example
+venv/
+env/
+
+# Django
+*.log
+db.sqlite3
+/media/
+static_root/
+staticfiles/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.so
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
 node_modules/
+
+# IDE configuration
+.idea/
+.vscode/
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+bfg.jar

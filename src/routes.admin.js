@@ -18,6 +18,7 @@ const AdminLoans = lazy(() => import("layouts/admin/loansEnhanced"));
 const AdminPayments = lazy(() => import("layouts/admin/paymentsEnhanced"));
 const AdminSettings = lazy(() => import("layouts/admin/settings"));
 const AdminChat = lazy(() => import("layouts/admin/adminChat"));
+const EnhancedAdminChat = lazy(() => import("layouts/admin/EnhancedAdminChat"));
 
 // Loading fallback component
 const AdminLoadingFallback = () => (
@@ -121,7 +122,7 @@ const adminRoutes = [
     component: (
       <ProtectedRoute allowedRoles={["admin"]}>
         <Suspense fallback={<AdminLoadingFallback />}>
-          <AdminChat />
+          <EnhancedAdminChat />
         </Suspense>
       </ProtectedRoute>
     ),

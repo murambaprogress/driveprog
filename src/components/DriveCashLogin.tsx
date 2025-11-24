@@ -62,7 +62,8 @@ const DriveCashLogin = () => {
 
       if (isAdmin) {
         // Admin login - call real API
-        const response = await fetch('http://127.0.0.1:8000/api/accounts/login/', {
+        const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+        const response = await fetch(`${API_URL}/accounts/login/`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -100,7 +101,8 @@ const DriveCashLogin = () => {
         }
       } else if (formData.email && formData.password) {
         // User login - call real API
-        const response = await fetch('http://127.0.0.1:8000/api/accounts/login/', {
+        const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+        const response = await fetch(`${API_URL}/accounts/login/`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

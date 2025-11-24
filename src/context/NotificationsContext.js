@@ -23,7 +23,9 @@ export function NotificationsProvider({ children }) {
   const { user } = useUserData();
 
   const fetchNotifications = useCallback(async () => {
-    if (user) {
+    // Only fetch if user is logged in and has authentication token
+    const token = localStorage.getItem('authToken');
+    if (user && token) {
       const fetchedNotifications = await notificationsService.getNotifications();
       setNotifications(fetchedNotifications);
       setUnreadCount(fetchedNotifications.filter((n) => !n.read).length);

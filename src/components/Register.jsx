@@ -65,6 +65,20 @@ const Register = () => {
     if (error) setError('');
   };
 
+  // Calculate age from date of birth
+  const calculateAge = (dob) => {
+    const today = new Date();
+    const birthDate = new Date(dob);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    
+    return age;
+  };
+
   const handleRegister = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -77,8 +91,19 @@ const Register = () => {
       return;
     }
 
+    // Validate age - must be 18 or older
+    if (formData.date_of_birth) {
+      const age = calculateAge(formData.date_of_birth);
+      if (age < 18) {
+        setError(`You must be at least 18 years old to register. Your current age is ${age} years.`);
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/accounts/register/', {
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+      const response = await fetch(`${API_URL}/accounts/register/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -92,9 +117,24 @@ const Register = () => {
         setMessage(data.message);
         setUserId(data.user_id);
       } else {
-        setError(data.error || 'Registration failed.');
+        // Handle validation errors
+        if (data.date_of_birth) {
+          setError(data.date_of_birth[0] || data.date_of_birth);
+        } else if (data.error) {
+          setError(data.error);
+        } else {
+          // Display all field errors
+          const errorMessages = Object.entries(data)
+            .map(([field, messages]) => {
+              const msg = Array.isArray(messages) ? messages[0] : messages;
+              return `${field}: ${msg}`;
+            })
+            .join(', ');
+          setError(errorMessages || 'Registration failed.');
+        }
       }
     } catch (err) {
+      console.error('Registration error:', err);
       setError('An error occurred. Please try again.');
     } finally {
       setLoading(false);
@@ -107,7 +147,8 @@ const Register = () => {
     setError('');
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/accounts/verify-otp/', {
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+      const response = await fetch(`${API_URL}/accounts/verify-otp/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -184,7 +225,7 @@ const Register = () => {
           <TextField
             fullWidth
             margin="normal"
-            label="Date of Birth"
+            label="Date of Birth (Must be 18+)"
             name="date_of_birth"
             type="date"
             value={formData.date_of_birth}
@@ -192,7 +233,18 @@ const Register = () => {
             InputLabelProps={{
               shrink: true,
             }}
-            sx={textFieldStyles}
+            inputProps={{
+              max: new Date().toISOString().split('T')[0], // Prevent future dates
+              min: new Date(new Date().setFullYear(new Date().getFullYear() - 120)).toISOString().split('T')[0] // Max 120 years old
+            }}
+            helperText="You must be at least 18 years old"
+            sx={{
+              ...textFieldStyles,
+              '& .MuiFormHelperText-root': {
+                color: 'rgba(255, 255, 255, 0.7)',
+                fontSize: '0.75rem'
+              }
+            }}
           />
           <TextField
             fullWidth

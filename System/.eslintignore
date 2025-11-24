@@ -1,0 +1,6 @@
+node_modules/
+dist/
+public/drivecash-dashboard/
+src/components/dashboards/**
+.vite/
+coverage/

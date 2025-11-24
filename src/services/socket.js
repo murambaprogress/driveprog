@@ -1,107 +1,204 @@
-// Socket service using socket.io-client when available.
-// Falls back to a safe no-op implementation if socket.io-client or server is not reachable.
+/**
+ * WebSocket Service for Real-time Chat
+ * Uses native WebSocket API to connect to Django Channels backend
+ */
 
-let socket = null;
-const listeners = new Set();
+class ChatWebSocket {
+  constructor() {
+    this.ws = null;
+    this.roomId = null;
+    this.listeners = new Set();
+    this.reconnectAttempts = 0;
+    this.maxReconnectAttempts = 5;
+    this.reconnectDelay = 1000;
+    this.isConnecting = false;
+  }
 
-export function connectSocket(url = process.env.REACT_APP_SOCKET_URL || 'http://localhost:4000') {
-  if (socket && socket.connected) return socket;
+  connect(roomId) {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN && this.roomId === roomId) {
+      console.log('[WebSocket] Already connected to room:', roomId);
+      return this.ws;
+    }
 
-  try {
-    // dynamically require to avoid hard crash if module missing in some environments
-    // eslint-disable-next-line global-require, import/no-extraneous-dependencies
-    const { io } = require('socket.io-client');
+    // Close existing connection if switching rooms
+    if (this.ws && this.roomId !== roomId) {
+      this.disconnect();
+    }
 
-    const opts = {
-      autoConnect: true,
-      transports: ['websocket', 'polling'],
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-      timeout: 5000,
+    this.roomId = roomId;
+    this.isConnecting = true;
+
+    // Get token from localStorage (same as apiClient)
+    let token = localStorage.getItem('authToken');
+    if (token) {
+      try {
+        const maybeJson = JSON.parse(token);
+        if (maybeJson && typeof maybeJson === 'object') {
+          token = maybeJson.access 
+            || maybeJson.token 
+            || (maybeJson.tokens && maybeJson.tokens.access) 
+            || null;
+        }
+      } catch (_) {
+        // token is a plain string, use as-is
+      }
+    }
+
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsHost = process.env.REACT_APP_WS_HOST || 'localhost:8000';
+    const wsUrl = `${wsProtocol}//${wsHost}/ws/chat/${roomId}/?token=${token}`;
+
+    console.log('[WebSocket] Connecting to:', wsUrl);
+
+    try {
+      this.ws = new WebSocket(wsUrl);
+
+      this.ws.onopen = () => {
+        console.log('[WebSocket] Connected to room:', roomId);
+        this.isConnecting = false;
+        this.reconnectAttempts = 0;
+        this.notifyListeners({ type: 'connection', status: 'connected', roomId });
+      };
+
+      this.ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          console.log('[WebSocket] Message received:', data);
+          this.notifyListeners(data);
+        } catch (error) {
+          console.error('[WebSocket] Error parsing message:', error);
+        }
+      };
+
+      this.ws.onerror = (error) => {
+        console.error('[WebSocket] Error:', error);
+        this.notifyListeners({ type: 'error', error });
+      };
+
+      this.ws.onclose = (event) => {
+        console.log('[WebSocket] Disconnected:', event.code, event.reason);
+        this.isConnecting = false;
+        this.notifyListeners({ type: 'connection', status: 'disconnected' });
+
+        // Auto-reconnect if not a normal closure
+        if (event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
+          this.reconnectAttempts++;
+          console.log(`[WebSocket] Reconnecting... Attempt ${this.reconnectAttempts}`);
+          setTimeout(() => {
+            if (this.roomId) {
+              this.connect(this.roomId);
+            }
+          }, this.reconnectDelay * this.reconnectAttempts);
+        }
+      };
+
+      return this.ws;
+    } catch (error) {
+      console.error('[WebSocket] Connection error:', error);
+      this.isConnecting = false;
+      return null;
+    }
+  }
+
+  disconnect() {
+    if (this.ws) {
+      console.log('[WebSocket] Disconnecting from room:', this.roomId);
+      this.ws.close(1000, 'Client disconnect');
+      this.ws = null;
+      this.roomId = null;
+    }
+  }
+
+  sendMessage(message) {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      console.warn('[WebSocket] Cannot send message - not connected');
+      return false;
+    }
+
+    const payload = {
+      type: 'chat_message',
+      message: message
     };
 
-    socket = io(url, opts);
+    this.ws.send(JSON.stringify(payload));
+    console.log('[WebSocket] Message sent:', payload);
+    return true;
+  }
 
-    socket.on('connect', () => {
-      console.info('[socket] connected', socket.id, 'transport=', socket.io.engine.transport.name);
-    });
+  sendTyping(isTyping) {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      return false;
+    }
 
-    socket.on('disconnect', (reason) => {
-      console.info('[socket] disconnected', reason);
-    });
+    const payload = {
+      type: 'typing',
+      is_typing: isTyping
+    };
 
-    socket.on('connect_error', (err) => {
-      console.error('[socket] connect_error', err && (err.message || err));
-      // attempt fallback to 127.0.0.1 if url used localhost
-      if (url.includes('localhost') && !url.includes('127.0.0.1')) {
-        try {
-          console.info('[socket] retrying with 127.0.0.1 fallback');
-          socket.close && socket.close();
-        } catch (e) { /* ignore */ }
-        socket = io(url.replace('localhost', '127.0.0.1'), opts);
+    this.ws.send(JSON.stringify(payload));
+    return true;
+  }
+
+  sendReadReceipt(messageId) {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      return false;
+    }
+
+    const payload = {
+      type: 'read_receipt',
+      message_id: messageId
+    };
+
+    this.ws.send(JSON.stringify(payload));
+    return true;
+  }
+
+  onMessage(callback) {
+    this.listeners.add(callback);
+    return () => this.listeners.delete(callback);
+  }
+
+  notifyListeners(data) {
+    this.listeners.forEach((callback) => {
+      try {
+        callback(data);
+      } catch (error) {
+        console.error('[WebSocket] Listener error:', error);
       }
     });
-
-    socket.on('chat:message', (payload) => {
-      // forward to local listeners
-      listeners.forEach((fn) => {
-        try {
-          // Extract message and conversation ID from payload
-          const message = payload.message;
-          const conversationId = payload.room_id;
-          fn({ conversationId, message });
-        } catch (e) { /* ignore listener errors */ }
-      });
-    });
-
-    socket.on('chat:typing', (payload) => {
-      listeners.forEach((fn) => {
-        try { fn({ typing: true, ...payload }); } catch (e) { /* ignore */ }
-      });
-    });
-
-    socket.on('chat:message_status', (payload) => {
-      listeners.forEach((fn) => {
-        try { fn(payload); } catch (e) { /* ignore */ }
-      });
-    });
-
-    return socket;
-  } catch (err) {
-    // graceful fallback
-    console.info('[socket] socket.io-client not available or failed to connect, socket features disabled.', err && (err.message || err));
-    socket = {
-      id: null,
-      connected: false,
-      emit: () => {},
-      on: () => {},
-      close: () => {},
-    };
-    return socket;
   }
+
+  isConnected() {
+    return this.ws && this.ws.readyState === WebSocket.OPEN;
+  }
+}
+
+// Singleton instance
+const chatWebSocket = new ChatWebSocket();
+
+// Legacy compatibility exports
+export function connectSocket(roomId) {
+  return chatWebSocket.connect(roomId);
 }
 
 export function onSocketMessage(fn) {
-  listeners.add(fn);
-  return () => listeners.delete(fn);
+  return chatWebSocket.onMessage(fn);
 }
 
-export function emitMessage(convId, msg) {
-  if (!socket) connectSocket();
-  try {
-  socket.emit && socket.emit('chat:message', { room_id: convId, message: msg });
-  } catch (e) {
-    /* ignore */
+export function emitMessage(roomId, msg) {
+  // For legacy compatibility - connect if needed
+  if (!chatWebSocket.isConnected() || chatWebSocket.roomId !== roomId) {
+    chatWebSocket.connect(roomId);
   }
+  chatWebSocket.sendMessage(msg.text || msg.message || msg);
 }
 
-export function emitTyping(convId, userId) {
-  if (!socket) connectSocket();
-  try {
-    socket.emit && socket.emit('chat:typing', { conversationId: convId, userId });
-  } catch (e) {
-    /* ignore */
+export function emitTyping(roomId, isTyping) {
+  if (!chatWebSocket.isConnected() || chatWebSocket.roomId !== roomId) {
+    chatWebSocket.connect(roomId);
   }
+  chatWebSocket.sendTyping(isTyping);
 }
 
-export default { connectSocket, onSocketMessage, emitMessage, emitTyping };
+export default chatWebSocket;
+

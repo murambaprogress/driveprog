@@ -50,6 +50,15 @@ class ChatMessage(models.Model):
     sender_type = models.CharField(max_length=10, choices=SENDER_TYPE_CHOICES)
     message = models.TextField()
     
+    # Reply functionality
+    reply_to = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='replies'
+    )
+    
     # Attachments (optional)
     attachment = models.FileField(upload_to='chat_attachments/', null=True, blank=True)
     attachment_name = models.CharField(max_length=255, null=True, blank=True)

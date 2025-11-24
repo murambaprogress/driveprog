@@ -20,13 +20,17 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import { ThemeProvider } from '@mui/material/styles';
 import theme from 'assets/theme';
+
+// Import responsive styles
+import './assets/css/responsive.css';
+
 // initialize socket client in browser only (dynamically required so missing dependency won't break build)
 if (typeof window !== 'undefined') {
   try {
     // eslint-disable-next-line global-require
     const socketService = require('./services/socket').default;
     if (socketService && socketService.connectSocket) {
-      const url = process.env.REACT_APP_SOCKET_URL || 'http://localhost:4000';
+      const url = process.env.REACT_APP_SOCKET_URL || 'http://localhost:8000';
       socketService.connectSocket(url);
     }
   } catch (e) {

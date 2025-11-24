@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
+from datetime import date
+from dateutil.relativedelta import relativedelta
 from .models import User, OTP
 
 class UserSerializer(serializers.ModelSerializer):
@@ -23,6 +25,17 @@ class RegisterSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         if attrs['password'] != attrs['password2']:
             raise serializers.ValidationError({"password": "Password fields didn't match."})
+        
+        # Validate age - must be 18 years or older
+        if 'date_of_birth' in attrs and attrs['date_of_birth']:
+            dob = attrs['date_of_birth']
+            today = date.today()
+            age = relativedelta(today, dob).years
+            
+            if age < 18:
+                raise serializers.ValidationError({
+                    "date_of_birth": f"You must be at least 18 years old to register. Current age: {age} years."
+                })
             
         return attrs
     

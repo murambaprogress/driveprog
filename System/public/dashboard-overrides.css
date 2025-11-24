@@ -1,0 +1,46 @@
+/* Dashboard CSS overrides to hide role-switching UI elements */
+/* This CSS will be injected to hide admin/user switching controls */
+
+/* Hide any buttons that might contain role switching text */
+button[aria-label*="Switch"],
+button[title*="Switch"],
+button[aria-label*="Admin"],
+button[title*="Admin"],
+button[aria-label*="User"],
+button[title*="User"],
+.role-switch,
+.admin-toggle,
+.user-toggle,
+.impersonate-btn,
+.switch-role,
+[data-testid*="role"],
+[data-testid*="switch"],
+[class*="roleSwitch"],
+[class*="adminToggle"],
+[class*="userToggle"] {
+  display: none !important;
+}
+
+/* Hide only specific menu items that contain role switching text */
+/* Note: This is now handled by the JavaScript injected into the iframe */
+/* The generic hiding of all MuiMenuItem-root was causing button issues */
+
+/* Hide any toggle switches or radio buttons related to role selection */
+input[type="radio"][name*="role"],
+input[type="checkbox"][name*="role"],
+.MuiSwitch-root[aria-label*="role"],
+.MuiToggleButton-root[aria-label*="role"] {
+  display: none !important;
+}
+
+/* Additional selectors for common role switching patterns */
+[aria-label*="toggle"],
+[aria-label*="impersonate"],
+[title*="toggle"],
+[title*="impersonate"],
+.toggle-role,
+.role-selector,
+.admin-mode,
+.user-mode {
+  display: none !important;
+}

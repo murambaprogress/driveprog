@@ -3,6 +3,7 @@
  * Admin routes are completely excluded from this file
  */
 
+import React from "react";
 import Dashboard from "layouts/dashboard";
 import UnifiedLoans from "layouts/loans";
 import UnifiedPayments from "layouts/payments";
@@ -10,10 +11,10 @@ import Documents from "layouts/documents";
 import Calculator from "layouts/calculator";
 import Support from "layouts/support";
 import UserChat from "layouts/chat/userChat";
+import EnhancedChat from "layouts/chat/EnhancedChatSimple";
 import Profile from "layouts/profile";
 import Icon from "@mui/material/Icon";
 import LoanApplicationDetails from "loanApp/components/LoanApplicationDetails";
-import React from "react";
 
 const userRoutes = [
   // User Dashboard Routes Only
@@ -86,7 +87,7 @@ const userRoutes = [
     key: "chat",
     icon: <Icon fontSize="small">chat</Icon>,
     route: "/chat",
-    component: <UserChat />,
+    component: <EnhancedChat />,
   },
 ];
 

@@ -7,6 +7,7 @@ import {
   Grid
 } from '@mui/material';
 import BrandNeon from './BrandNeon';
+import defenderImage from '../assets/defender.jpg';
 
 // Reusable liquid-glass styling for cards/panels
 const glassStyle = {
@@ -46,14 +47,11 @@ const AuthLayout = ({ children }) => {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundImage: `linear-gradient(180deg, rgba(8,10,20,0.28), rgba(0,0,0,0.48)), url('/defender.jpg')`,
+          backgroundImage: `linear-gradient(180deg, rgba(8,10,20,0.28), rgba(0,0,0,0.48)), url('${defenderImage}')`,
           backgroundSize: 'cover',
           backgroundPosition: 'center center',
           backgroundRepeat: 'no-repeat',
           zIndex: 1,
-          '@supports (background-image: url("/defender.jpg"))': {
-            backgroundImage: `linear-gradient(180deg, rgba(8,10,20,0.28), rgba(0,0,0,0.48)), url('/defender.jpg')`
-          }
         }}
       />
 

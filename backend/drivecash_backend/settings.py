@@ -35,24 +35,27 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-5n7u-_fv5xdjffjad(ssj&2vi@9v(ydisdz3(29#&t&+7(boi('
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 't')
 
 ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
-    "192.168.56.1",
+    "drivecash.pythonanywhere.com",
+    ".pythonanywhere.com",  # PythonAnywhere deployment
 ]
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',  # Must be first for ASGI
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'channels',  # WebSocket support
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
@@ -65,6 +68,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Serve static files
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -80,7 +84,7 @@ ROOT_URLCONF = 'drivecash_backend.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR.parent, 'build')],  # React build directory
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -100,12 +104,12 @@ WSGI_APPLICATION = 'drivecash_backend.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('DB_NAME', 'drivecash_db'),
-        'USER': os.getenv('DB_USER', 'root'),
+        'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.sqlite3'),
+        'NAME': os.getenv('DB_NAME', os.path.join(BASE_DIR, 'db.sqlite3')),
+        'USER': os.getenv('DB_USER', ''),
         'PASSWORD': os.getenv('DB_PASSWORD', ''),
-        'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', '3306'),
+        'HOST': os.getenv('DB_HOST', ''),
+        'PORT': os.getenv('DB_PORT', ''),
     }
 }
 
@@ -144,8 +148,13 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# Additional locations for static files (React build)
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR.parent, 'build', 'static'),  # React build static files
+]
 
 # Media files (User uploads)
 MEDIA_URL = '/media/'
@@ -190,13 +199,13 @@ SIMPLE_JWT = {
 }
 
 # Email settings
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'murambaprogress@gmail.com'
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')  # Load from environment variable
-DEFAULT_FROM_EMAIL = 'DriveCash <murambaprogress@gmail.com>'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'  # Use SMTP backend for real email sending
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() in ('true', '1', 't')
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'murambaprogress@gmail.com')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', 'khzy taxx znkb jneb')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'DriveCash <murambaprogress@gmail.com>')
 
 # Custom user model
 AUTH_USER_MODEL = 'accounts.User'
@@ -210,26 +219,18 @@ LOAN_MAX_LIMIT = int(os.getenv('LOAN_MAX_LIMIT', 25000))
 # Maximum Loan-To-Value (LTV) ratio allowed (e.g., 0.5 = 50%)
 LOAN_MAX_LTV_RATIO = float(os.getenv('LOAN_MAX_LTV_RATIO', 0.5))
 
-# CORS settings - Allow all origins for development
-CORS_ALLOW_ALL_ORIGINS = True  # For development only!
+# CORS settings
+# For production, set CORS_ALLOW_ALL_ORIGINS to False and use CORS_ALLOWED_ORIGINS
+CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL', 'True').lower() in ('true', '1', 't')
 
-# Backup specific origins list (when CORS_ALLOW_ALL_ORIGINS is False)
+# Allowed origins for production
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5174",
-    "http://127.0.0.1:5174",
+    # Local development
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "http://localhost:3001",  # Test auth tool
-    "http://127.0.0.1:3001",
-    "http://localhost:3006",
-    "http://127.0.0.1:3006",
-    "http://localhost:3007",
-    "http://127.0.0.1:3007",
-    "http://192.168.56.1:5174",  # Added your application's origin
-    "http://localhost:4173",    # Vite preview mode
-    "http://127.0.0.1:4173",
-    "http://localhost:8080",    # Alternative dev ports
-    "http://127.0.0.1:8080",
+    # PythonAnywhere domain
+    "https://drivecash.pythonanywhere.com",
+    "http://drivecash.pythonanywhere.com",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -258,3 +259,35 @@ CORS_ALLOW_METHODS = [
     'POST',
     'PUT',
 ]
+
+# WhiteNoise configuration for static files
+WHITENOISE_USE_FINDERS = True
+WHITENOISE_AUTOREFRESH = True  # Auto-refresh in development
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# CSRF trusted origins for production
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'https://drivecash.pythonanywhere.com',
+    'http://drivecash.pythonanywhere.com',
+]
+
+# Channels Configuration
+ASGI_APPLICATION = 'drivecash_backend.asgi.application'
+
+# Channel Layers - using in-memory for local development
+# For production, use Redis: 'channels_redis.core.RedisChannelLayer'
+CHANNEL_LAYERS = {
+    'default': {
+        # Use in-memory channel layer for local development (no Redis needed)
+        'BACKEND': 'channels.layers.InMemoryChannelLayer'
+        
+        # For production with Redis, uncomment below:
+        # 'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        # 'CONFIG': {
+        #     "hosts": [('127.0.0.1', 6379)],
+        # },
+    },
+}
+ 

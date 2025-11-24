@@ -222,26 +222,20 @@ function QuickActions({ onQuickMessage }) {
 function ChatPlatform() {
   const navigate = useNavigate();
   const messagesEndRef = useRef(null);
+  const { user } = useUserData();
   
   // Chat state
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      message: "Hello! Welcome to our 24/7 support. How can I help you today?",
-      timestamp: new Date(Date.now() - 300000),
-      isOwnMessage: false,
-      senderName: "Admin Sarah",
-      senderAvatar: null,
-      status: 'delivered'
-    }
-  ]);
-  
+  const [messages, setMessages] = useState([]);
+  const [conversationLoaded, setConversationLoaded] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [adminOnline, setAdminOnline] = useState(true);
   const [lastSeen, setLastSeen] = useState("2 minutes ago");
   const [menuAnchor, setMenuAnchor] = useState(null);
   const [supportDialog, setSupportDialog] = useState(false);
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [roomId, setRoomId] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   // Auto-scroll to bottom
   const scrollToBottom = () => {
@@ -251,6 +245,90 @@ function ChatPlatform() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Load conversation on mount
+  useEffect(() => {
+    const loadConversation = async () => {
+      try {
+        setLoading(true);
+        
+        // Get or create chat room for user
+        const roomResponse = await fetch('/api/chat/rooms/my_room/', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (roomResponse.ok) {
+          const roomData = await roomResponse.json();
+          setRoomId(roomData.room.id);
+          
+          // Load messages for this room
+          const messagesResponse = await fetch(`/api/chat/messages/?room_id=${roomData.room.id}`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          if (messagesResponse.ok) {
+            const messagesData = await messagesResponse.json();
+            const formattedMessages = messagesData.results?.map(msg => ({
+              id: msg.id,
+              messageId: msg.id,
+              message: msg.message,
+              timestamp: new Date(msg.created_at),
+              isOwnMessage: msg.sender_type === 'user',
+              senderName: msg.sender_type === 'admin' ? 'Admin Support' : 'You',
+              status: msg.is_read ? 'read' : 'delivered',
+              replyTo: msg.reply_to ? {
+                messageId: msg.reply_to.id,
+                message: msg.reply_to.message,
+                senderName: msg.reply_to.sender_type === 'admin' ? 'Admin Support' : 'You'
+              } : null
+            })) || [];
+            
+            setMessages(formattedMessages);
+          }
+        }
+        
+        // Add welcome message if no conversation exists
+        if (messages.length === 0) {
+          setMessages([{
+            id: 'welcome',
+            messageId: 'welcome',
+            message: "Hello! Welcome to our 24/7 support. How can I help you today?",
+            timestamp: new Date(),
+            isOwnMessage: false,
+            senderName: "Admin Support",
+            status: 'delivered'
+          }]);
+        }
+        
+        setConversationLoaded(true);
+      } catch (error) {
+        console.error('Error loading conversation:', error);
+        // Fallback to welcome message
+        setMessages([{
+          id: 'welcome',
+          messageId: 'welcome',
+          message: "Hello! Welcome to our 24/7 support. How can I help you today?",
+          timestamp: new Date(),
+          isOwnMessage: false,
+          senderName: "Admin Support",
+          status: 'delivered'
+        }]);
+        setConversationLoaded(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    if (user && !conversationLoaded) {
+      loadConversation();
+    }
+  }, [user, conversationLoaded, messages.length]);
 
   // Simulate admin responses
   useEffect(() => {

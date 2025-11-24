@@ -57,7 +57,8 @@ const DriveCashLogin = () => {
     if (isAdminLogin) {
       if (adminLoginStep === 1) {
         try {
-          const response = await fetch('http://127.0.0.1:8000/api/accounts/admin/login/step1/', {
+          const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+          const response = await fetch(`${API_URL}/accounts/admin/login/step1/`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -83,7 +84,8 @@ const DriveCashLogin = () => {
         }
       } else { // adminLoginStep === 2
         try {
-          const response = await fetch('http://127.0.0.1:8000/api/accounts/admin/login/step2/', {
+          const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+          const response = await fetch(`${API_URL}/accounts/admin/login/step2/`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -100,8 +102,12 @@ const DriveCashLogin = () => {
             // Normalize token storage: save raw access token for API client
             const accessToken = (data && data.tokens && data.tokens.access) || data.access || data.token || null;
             const refreshToken = (data && data.tokens && data.tokens.refresh) || data.refresh || null;
+            
+            console.log('🔐 [LOGIN] Admin login successful, storing tokens...');
+            
             if (accessToken) {
               localStorage.setItem('authToken', accessToken);
+              console.log('🔐 [LOGIN] authToken stored, length:', accessToken.length);
             }
             if (refreshToken) {
               localStorage.setItem('refreshToken', refreshToken);
@@ -113,6 +119,8 @@ const DriveCashLogin = () => {
             };
             localStorage.setItem('mockUserProfile', JSON.stringify(adminProfile));
             updateProfile({ role: 'admin' });
+            
+            console.log('🔐 [LOGIN] Navigating to /admin...');
             navigate('/admin', { replace: true });
           } else {
             setError(data.error || 'OTP verification failed.');
@@ -125,7 +133,8 @@ const DriveCashLogin = () => {
       }
     } else { // User login
       try {
-        const response = await fetch('http://127.0.0.1:8000/api/accounts/login/', {
+        const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+        const response = await fetch(`${API_URL}/accounts/login/`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -142,8 +151,12 @@ const DriveCashLogin = () => {
           // Normalize token storage: save raw access token for API client
           const accessToken = (data && data.tokens && data.tokens.access) || data.access || data.token || null;
           const refreshToken = (data && data.tokens && data.tokens.refresh) || data.refresh || null;
+          
+          console.log('🔐 [LOGIN] User login successful, storing tokens...');
+          
           if (accessToken) {
             localStorage.setItem('authToken', accessToken);
+            console.log('🔐 [LOGIN] authToken stored, length:', accessToken.length);
           }
           if (refreshToken) {
             localStorage.setItem('refreshToken', refreshToken);
@@ -155,6 +168,8 @@ const DriveCashLogin = () => {
           };
           localStorage.setItem('mockUserProfile', JSON.stringify(userProfile));
           updateProfile({ role: 'user' });
+          
+          console.log('🔐 [LOGIN] Navigating to /dashboard...');
           navigate('/dashboard', { replace: true });
         } else {
           setError(data.error || 'Login failed.');

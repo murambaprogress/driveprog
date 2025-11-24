@@ -1,0 +1,43 @@
+# COPY AND PASTE THIS INTO PYTHONANYWHERE DJANGO SHELL
+# Run: python manage.py shell
+# Then paste the code below:
+
+from accounts.models import User
+
+# Try to get or create admin
+admin_username = '9999999999'
+admin_password = 'drivecash'
+
+try:
+    # Check if admin exists
+    admin = User.objects.get(username=admin_username)
+    print(f"✓ Found admin: {admin.username} ({admin.email})")
+    
+    # Update admin settings
+    admin.user_type = 'admin'
+    admin.is_staff = True
+    admin.is_superuser = True
+    admin.is_verified = True
+    admin.save()
+    print("✓ Admin updated!")
+    
+except User.DoesNotExist:
+    # Create new admin with unique email
+    email = 'admin@drivecash.com'
+    if User.objects.filter(email=email).exists():
+        email = f'admin_{admin_username}@drivecash.com'
+    
+    admin = User.objects.create_user(
+        username=admin_username,
+        email=email,
+        password=admin_password,
+        user_type='admin',
+        is_staff=True,
+        is_superuser=True,
+        is_verified=True
+    )
+    print(f"✓ Admin created: {admin.username} ({admin.email})")
+
+print(f"\nLogin with:")
+print(f"  Username: {admin_username}")
+print(f"  Password: {admin_password}")

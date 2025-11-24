@@ -58,6 +58,7 @@ function UserChat() {
       await loadMessages(roomData.room.id);
     } catch (error) {
       console.error("Error initializing chat:", error);
+      // Error handling is done by global interceptor
     } finally {
       setLoading(false);
     }

@@ -39,10 +39,41 @@ function DashboardLayout({ children, noPaddingTop }) {
   return (
     <MDBox
       sx={({ breakpoints, transitions, functions: { pxToRem } }) => ({
-        p: 3,
+        p: { xs: 2, sm: 2, md: 3 }, // Responsive padding
         position: "relative",
         minHeight: "100vh",
 
+        // Mobile devices - no margin
+        [breakpoints.only("xs")]: {
+          marginLeft: 0,
+          paddingTop: pxToRem(64), // Space for mobile navbar
+        },
+
+        // Tablets - small margin
+        [breakpoints.only("sm")]: {
+          marginLeft: 0,
+          paddingTop: pxToRem(64),
+        },
+
+        // Medium screens - conditional margin
+        [breakpoints.only("md")]: {
+          marginLeft: miniSidenav ? pxToRem(80) : pxToRem(250),
+          transition: transitions.create(["margin-left"], {
+            easing: transitions.easing.easeInOut,
+            duration: transitions.duration.standard,
+          }),
+        },
+
+        // Large screens - conditional margin
+        [breakpoints.only("lg")]: {
+          marginLeft: miniSidenav ? pxToRem(100) : pxToRem(260),
+          transition: transitions.create(["margin-left"], {
+            easing: transitions.easing.easeInOut,
+            duration: transitions.duration.standard,
+          }),
+        },
+
+        // Extra large screens - full margin
         [breakpoints.up("xl")]: {
           marginLeft: miniSidenav ? pxToRem(120) : pxToRem(274),
           transition: transitions.create(["margin-left", "margin-right"], {

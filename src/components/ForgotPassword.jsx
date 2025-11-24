@@ -57,7 +57,8 @@ const ForgotPassword = () => {
     setMessage('');
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/accounts/password-reset-request/', {
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+      const response = await fetch(`${API_URL}/accounts/password-reset-request/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -92,7 +93,8 @@ const ForgotPassword = () => {
     }
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/accounts/password-reset/', {
+      const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+      const response = await fetch(`${API_URL}/accounts/password-reset/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

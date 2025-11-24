@@ -278,6 +278,13 @@ def login_user(request):
             )
 
         if user.check_password(password):
+            # Check if user is active before proceeding
+            if not user.is_active:
+                return Response(
+                    {"error": "User account is inactive. Please contact support."}, 
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+            
             if user.user_type == 'admin' and not user.is_verified:
                 return Response(
                     {"error": "Admin account not verified. Please check your email for OTP verification."}, 

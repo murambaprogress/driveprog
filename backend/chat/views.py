@@ -125,6 +125,7 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
         user = request.user
         room_id = request.data.get('room_id')
         message_text = request.data.get('message')
+        reply_to_id = request.data.get('reply_to')
 
         if not room_id or not message_text:
             return Response(
@@ -151,12 +152,24 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
 
+        # Handle reply
+        reply_to_message = None
+        if reply_to_id:
+            try:
+                reply_to_message = ChatMessage.objects.get(id=reply_to_id, room=room)
+            except ChatMessage.DoesNotExist:
+                return Response(
+                    {'error': 'Reply target message not found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
         # Create message
         message = ChatMessage.objects.create(
             room=room,
             sender=user,
             sender_type=sender_type,
             message=message_text,
+            reply_to=reply_to_message,
             attachment=request.FILES.get('attachment'),
             attachment_name=request.FILES.get('attachment').name if request.FILES.get('attachment') else None
         )

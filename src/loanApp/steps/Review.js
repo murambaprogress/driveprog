@@ -119,6 +119,38 @@ export default function Review() {
     setIsSubmitting(true);
     
     try {
+      // Validate mandatory documents before submission (first 8 photos only)
+      const mandatoryFields = {
+        'govIdFront': 'Government ID (Front)',
+        'govIdBack': 'Government ID (Back)',
+        'title': 'Vehicle Title - Front',
+        'backOfTitle': 'Vehicle Title - Back',
+        'vinFromTitle': 'VIN from Title',
+        'vinFromDash': 'VIN from Dashboard',
+        'vinFromSticker': 'VIN from Door Sticker',
+        'odometer': 'Odometer Reading'
+      };
+      
+      const missingDocuments = [];
+      
+      // Check loan.photos for mandatory documents
+      for (const [fieldName, label] of Object.entries(mandatoryFields)) {
+        const hasPhotoInPhotos = loan.photos && loan.photos[fieldName] && loan.photos[fieldName].length > 0;
+        const hasPhotoInDocuments = loan.documents && loan.documents.some(doc => 
+          doc.kind === fieldName || doc.field === fieldName
+        );
+        
+        if (!hasPhotoInPhotos && !hasPhotoInDocuments) {
+          missingDocuments.push(label);
+        }
+      }
+      
+      if (missingDocuments.length > 0) {
+        alert(`Please upload the following mandatory documents before submitting:\n\n${missingDocuments.join('\n')}`);
+        setIsSubmitting(false);
+        return;
+      }
+      
       // Get the backend ID from previous saves (if any)
       // loan.backendId should be set from previous saves in other steps
       let currentBackendId = loan.backendId;
@@ -218,6 +250,45 @@ export default function Review() {
         } catch (uploadError) {
           console.error('Error uploading photos:', uploadError);
           // Don't fail the submission if photo upload fails
+        }
+      }
+
+      // Step 2b: Upload documents from Step4Photos (loan.documents array)
+      if (loan.documents && loan.documents.length > 0) {
+        console.log('Uploading documents from Step4Photos...', loan.documents);
+        try {
+          for (const doc of loan.documents) {
+            // Check if the document has a File object (not just a blob URL)
+            if (doc.file instanceof File) {
+              console.log(`Uploading document: ${doc.filename}`);
+              const formData = new FormData();
+              formData.append('file', doc.file);
+              formData.append('field_name', doc.kind || 'other');
+              formData.append('document_type', doc.kind || 'other');
+              formData.append('title', doc.filename);
+              
+              // Upload to backend
+              const uploadResponse = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/loans/applications/${applicationId}/upload_document/`, {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                },
+                body: formData
+              });
+              
+              if (!uploadResponse.ok) {
+                console.warn(`Failed to upload document: ${doc.filename}`);
+              } else {
+                console.log(`Successfully uploaded document: ${doc.filename}`);
+              }
+            } else {
+              console.warn('Document does not have a File object:', doc);
+            }
+          }
+          console.log('All documents uploaded successfully');
+        } catch (uploadError) {
+          console.error('Error uploading documents:', uploadError);
+          // Don't fail the submission if document upload fails
         }
       }
 

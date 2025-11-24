@@ -112,6 +112,7 @@ const LoanReviewModal = ({ open, onClose, loan, onApprove, onDecline, onQuery })
   // Debug logging
   console.log('[LoanReviewModal] Received loan:', loan);
   console.log('[LoanReviewModal] Using loanData:', loanData);
+  console.log('[LoanReviewModal] Documents in loanData:', loanData.documents);
   console.log('[LoanReviewModal] Photo fields:', {
     photo_vin_sticker_url: loanData.photo_vin_sticker_url,
     photo_odometer_url: loanData.photo_odometer_url,
@@ -160,10 +161,19 @@ const LoanReviewModal = ({ open, onClose, loan, onApprove, onDecline, onQuery })
   // Add documents from documents array
   if (loanData.documents && Array.isArray(loanData.documents)) {
     loanData.documents.forEach(doc => {
+      // Handle both absolute and relative URLs
+      let fileUrl = doc.file || doc.url;
+      if (fileUrl && !fileUrl.startsWith('http')) {
+        // Prepend backend URL for relative paths
+        const backendUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+        const baseUrl = backendUrl.replace('/api', ''); // Remove /api suffix
+        fileUrl = `${baseUrl}${fileUrl}`;
+      }
+      
       photos.push({
         id: doc.id,
         title: doc.title || doc.document_type,
-        src: doc.file || doc.url,
+        src: fileUrl,
         field: doc.document_type,
         type: 'document',
         description: doc.description,

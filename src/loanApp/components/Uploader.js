@@ -15,12 +15,19 @@ export default function Uploader({ onUploadComplete, kind = 'other', maxSize = 5
     const arr = Array.from(fileList).map((f) => {
       const isValid = f.size <= maxSize && f.type;
       const id = `up_${Math.random().toString(36).slice(2,9)}`;
-      const upload = { id, kind, filename: f.name, mimeType: f.type, size: f.size };
+      const upload = { 
+        id, 
+        kind, 
+        filename: f.name, 
+        mimeType: f.type, 
+        size: f.size,
+        file: f  // Store the actual File object for later upload
+      };
       if (!isValid) upload.invalid = true;
       return { file: f, preview: URL.createObjectURL(f), upload };
     });
     setFiles((prev) => [...prev, ...arr]);
-    // start fake upload
+    // Notify parent component with the upload object (including File)
     arr.forEach((item, idx) => {
       setTimeout(() => {
         onUploadComplete && onUploadComplete({ ...item.upload, url: item.preview });

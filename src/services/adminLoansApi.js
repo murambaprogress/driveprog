@@ -81,6 +81,17 @@ export async function fetchAdminLoans() {
   return records.map(normalizeLoan);
 }
 
+export async function fetchAdminLoanDetails(id) {
+  try {
+    const response = await apiClient.get(`/loans/applications/${id}/`);
+    console.log('[fetchAdminLoanDetails] Full loan data with documents:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('[fetchAdminLoanDetails] Error fetching loan details:', error);
+    throw error;
+  }
+}
+
 export async function approveAdminLoan(id, { approvedAmount, approvalNotes } = {}) {
   const payload = {
     approved_amount: Number(approvedAmount ?? 0),

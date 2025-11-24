@@ -33,6 +33,8 @@ const LoanApplicationDetails = () => {
     const fetchApplication = async () => {
       try {
         const data = await getLoanApplication(id);
+        console.log('[LoanApplicationDetails] Fetched application data:', data);
+        console.log('[LoanApplicationDetails] Documents in application:', data?.documents);
         setApplication(data);
       } catch (err) {
         console.error('Error fetching application:', err);
@@ -169,11 +171,31 @@ const LoanApplicationDetails = () => {
     { label: 'License Plate', value: application.license_plate || 'N/A' },
   ].filter(Boolean);
 
-  const photoInfo = application.documents?.map(doc => ({
-    label: doc.title || doc.document_type.replace(/_/g, ' '),
-    value: 'View',
-    link: doc.file,
-  })) || [];
+  console.log('[LoanApplicationDetails] Application object:', application);
+  console.log('[LoanApplicationDetails] Documents:', application?.documents);
+  
+  const photoInfo = application?.documents?.map(doc => {
+    console.log('[LoanApplicationDetails] Processing document:', doc);
+    
+    // Handle both absolute and relative URLs
+    let fileUrl = doc.file || doc.url;
+    if (fileUrl && !fileUrl.startsWith('http')) {
+      // Prepend backend URL for relative paths
+      const backendUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+      const baseUrl = backendUrl.replace('/api', ''); // Remove /api suffix
+      fileUrl = `${baseUrl}${fileUrl}`;
+    }
+    
+    console.log('[LoanApplicationDetails] Document file URL:', fileUrl);
+    
+    return {
+      label: doc.title || doc.document_type?.replace(/_/g, ' ') || 'Document',
+      value: 'View',
+      link: fileUrl,
+    };
+  }) || [];
+  
+  console.log('[LoanApplicationDetails] PhotoInfo array:', photoInfo);
 
   return (
     <SharedDashboardLayout>

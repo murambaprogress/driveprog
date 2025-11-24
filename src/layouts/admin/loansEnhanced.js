@@ -12,6 +12,7 @@ import EnhancedTable from "components/EnhancedTable";
 import { formatters } from "utils/dataFormatters";
 import {
   fetchAdminLoans,
+  fetchAdminLoanDetails,
   approveAdminLoan,
   rejectAdminLoan,
   raiseAdminLoanQuery,
@@ -487,6 +488,25 @@ function AdminLoans() {
     },
     [loadLoans, showNotification]
   );
+
+  const handleOpenReview = async (loan) => {
+    try {
+      console.log('[handleOpenReview] Fetching full details for loan:', loan.id);
+      // Fetch full loan details including documents
+      const fullLoanData = await fetchAdminLoanDetails(loan.id);
+      console.log('[handleOpenReview] Received full loan data:', fullLoanData);
+      
+      // Create a normalized loan object with full data
+      setReviewLoan({
+        ...loan,
+        raw: fullLoanData // Store full API response in raw field
+      });
+      setReviewModalOpen(true);
+    } catch (error) {
+      console.error('[handleOpenReview] Error fetching loan details:', error);
+      showNotification('Failed to load loan details', 'error');
+    }
+  };
 
   const handleBulkAction = async (actionType, loanIds, params = {}) => {
     if (!loanIds.length) {
@@ -994,10 +1014,7 @@ function AdminLoans() {
                   <Tooltip title="Review Application">
                     <IconButton
                       size="small"
-                      onClick={() => {
-                        setReviewLoan(row);
-                        setReviewModalOpen(true);
-                      }}
+                      onClick={() => handleOpenReview(row)}
                       sx={{
                         width: 32,
                         height: 32,
@@ -1071,8 +1088,7 @@ function AdminLoans() {
         >
           <MenuItem
             onClick={() => {
-              setReviewLoan(actionMenuLoan);
-              setReviewModalOpen(true);
+              handleOpenReview(actionMenuLoan);
               setActionMenuAnchor(null);
             }}
           >

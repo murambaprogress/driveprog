@@ -6,12 +6,13 @@ from accounts.models import User
 class ChatMessageSerializer(serializers.ModelSerializer):
     sender_name = serializers.SerializerMethodField()
     sender_email = serializers.SerializerMethodField()
+    reply_to = serializers.SerializerMethodField()
     
     class Meta:
         model = ChatMessage
         fields = [
             'id', 'room', 'sender', 'sender_type', 'sender_name', 'sender_email',
-            'message', 'attachment', 'attachment_name', 'is_read', 'read_at',
+            'message', 'reply_to', 'attachment', 'attachment_name', 'is_read', 'read_at',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'sender', 'sender_type', 'created_at', 'updated_at', 'read_at']
@@ -21,6 +22,17 @@ class ChatMessageSerializer(serializers.ModelSerializer):
     
     def get_sender_email(self, obj):
         return obj.sender.email
+    
+    def get_reply_to(self, obj):
+        if obj.reply_to:
+            return {
+                'id': obj.reply_to.id,
+                'message': obj.reply_to.message,
+                'sender_type': obj.reply_to.sender_type,
+                'sender_name': f"{obj.reply_to.sender.first_name} {obj.reply_to.sender.last_name}".strip() or obj.reply_to.sender.email,
+                'created_at': obj.reply_to.created_at
+            }
+        return None
 
 
 class ChatRoomSerializer(serializers.ModelSerializer):

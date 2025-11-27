@@ -44,6 +44,7 @@ ALLOWED_HOSTS = [
     "192.168.56.1",
     "drivecash.pythonanywhere.com",
     ".pythonanywhere.com",  # PythonAnywhere deployment
+    "drivecash.s3-website.us-east-2.amazonaws.com",  # S3 Static Website
 ]
 
 
@@ -251,6 +252,8 @@ CORS_ALLOWED_ORIGINS = [
     # PythonAnywhere domain
     "https://drivecash.pythonanywhere.com",
     "http://drivecash.pythonanywhere.com",
+    # S3 Static Website
+    "http://drivecash.s3-website.us-east-2.amazonaws.com",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -289,4 +292,5 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 CSRF_TRUSTED_ORIGINS = [
     'https://drivecash.pythonanywhere.com',
     'http://drivecash.pythonanywhere.com',
+    'http://drivecash.s3-website.us-east-2.amazonaws.com',
 ] 

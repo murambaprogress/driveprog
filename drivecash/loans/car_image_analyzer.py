@@ -23,7 +23,7 @@ class CarImageAnalyzer:
     """
     
     def __init__(self):
-        self.api_key = os.getenv('GEMINI_API_KEY')
+        self.api_key = os.getenv('GEMINI_API_KEY','AIzaSyDiiHAIXX4MS8qqVrH41I9XrJRujzq8b-E')
         self.model_name = os.getenv('GEMINI_MODEL', 'gemini-2.0-flash')
         self.text_model_name = os.getenv('GEMINI_TEXT_MODEL', 'gemini-2.0-flash')
         
